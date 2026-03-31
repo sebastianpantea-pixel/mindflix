@@ -663,10 +663,26 @@ function openDetail(id){
     <div class="mstat"><div class="mstat-num">${item.lastPlayed?'Da':'Nu'}</div><div class="mstat-lbl">Redat</div></div>
   `;
   const playLabel = item.type==='pdf'?'📄  Deschide PDF': item.type==='video'?'▶  Reda Video':'▶  Reda Audio';
+  // Compute what URL will actually be used
+  let debugUrl = item.link||'—';
+  if(item.link){
+    if(item.link.includes('dropbox.com')){
+      debugUrl=item.link.replace('www.dropbox.com','dl.dropboxusercontent.com').replace(/([?&]?)dl=0/,'$1dl=1');
+      if(!debugUrl.includes('dl='))debugUrl+=(debugUrl.includes('?')?'&':'?')+'dl=1';
+    } else if(item.link.includes('drive.google.com')){
+      const dm=item.link.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if(dm)debugUrl=`https://drive.google.com/uc?export=open&id=${dm[1]}`;
+    }
+  }
   document.getElementById('mActions').innerHTML=`
     <button class="btn btn-gold" onclick="playItem('${item.id}')">${playLabel}</button>
+    <button class="btn btn-ghost btn-sm" onclick="editItem('${item.id}')">✏ Editeaza</button>
     <button class="btn btn-ghost btn-sm" onclick="markDone('${item.id}')">✓ Finalizat</button>
     <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑 Sterge</button>
+    ${item.link?`<div style="width:100%;margin-top:.5rem;background:#111;border:.5px solid rgba(255,255,255,.08);border-radius:6px;padding:.6rem .8rem;">
+      <div style="font-size:.65rem;color:#C9A84C;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">URL redat efectiv</div>
+      <div style="font-size:.7rem;color:#888;word-break:break-all;line-height:1.5;">${debugUrl}</div>
+    </div>`:''}
   `;
   document.getElementById('detailOv').classList.add('open');
   // update lastPlayed
@@ -708,9 +724,43 @@ function playItem(id){
 }
 
 /* ═══ AUDIO ═══ */
+function convertToDirectUrl(url){
+  if(!url)return url;
+  if(url.includes('dropbox.com')){
+    // Sterge dl=0 si adauga raw=1 (functioneaza pt ambele formate /s/ si /scl/fi/)
+    let u=url.replace(/[?&]dl=0/,'').replace(/[?&]dl=1/,'');
+    // Adauga raw=1 pentru streaming direct fara pagina Dropbox
+    u=u+(u.includes('?')?'&':'?')+'raw=1';
+    return u;
+  }
+  return url;
+}
 function playAudio(item){
   if(!item.link){toast('Niciun link adaugat pentru acest titlu.');return;}
   const isDrive=item.link.includes('drive.google.com');
+  const isDropbox=item.link.includes('dropbox.com');
+  if(isDropbox){
+    // Dropbox raw=1 functioneaza pt /s/ si /scl/fi/ (format nou)
+    let dl=item.link.replace(/[?&]dl=0/,'').replace(/[?&]dl=1/,'');
+    dl=dl+(dl.includes('?')?'&':'?')+'raw=1';
+    const audio=document.getElementById('audioEl');
+    currentItem=item;
+    audio.src=dl;
+    audio.playbackRate=speeds[speedIdx];
+    audio.volume=parseFloat(document.getElementById('volSlider').value);
+    if(item.position>0)audio.currentTime=item.position;
+    audio.play().catch(()=>{toast('Eroare Dropbox. Verifica ca link-ul e public (dl=1).');});
+    document.getElementById('pThumb').textContent=item.emoji||'🎵';
+    document.getElementById('pTitle').textContent=item.title;
+    document.getElementById('pAuthor').textContent=(item.author||'')+(item.cat?' · '+item.cat:'');
+    document.getElementById('playerBar').style.display='flex';
+    document.getElementById('playMainBtn').textContent='⏸';
+    isPlaying=true;
+    clearInterval(progInterval);
+    progInterval=setInterval(()=>{if(audio.duration){const pct=(audio.currentTime/audio.duration)*100;document.getElementById('progFill').style.width=pct+'%';document.getElementById('pCurrent').textContent=formatTime(audio.currentTime);document.getElementById('pDuration').textContent=formatTime(audio.duration);item.progress=Math.round(pct);item.position=audio.currentTime;save();}},1000);
+    audio.onended=()=>{item.progress=100;item.position=0;save();document.getElementById('playMainBtn').textContent='▶';isPlaying=false;toast('Finalizat! ✓');};
+    return;
+  }
   if(isDrive){
     const m=item.link.match(/\/d\/([a-zA-Z0-9_-]+)/);
     const id=m?m[1]:null;
@@ -718,9 +768,10 @@ function playAudio(item){
     showDrivePlayer(item,streamUrl);
     return;
   }
+  const directUrl=convertToDirectUrl(item.link);
   const audio=document.getElementById('audioEl');
   currentItem=item;
-  audio.src=item.link;
+  audio.src=directUrl;
   audio.playbackRate=speeds[speedIdx];
   audio.volume=parseFloat(document.getElementById('volSlider').value);
   if(item.position>0)audio.currentTime=item.position;
@@ -927,6 +978,27 @@ function nextTrack(){toast('Navigheaza din biblioteca ta.');}
 /* ═══════════════════════════════════════════════════
    ADD / EDIT MODAL
 ═══════════════════════════════════════════════════ */
+function editItem(id){
+  const item=DB.find(i=>i.id===id);
+  if(!item)return;
+  editingId=id;
+  document.getElementById('fTitle').value=item.title||'';
+  document.getElementById('fAuthor').value=item.author||'';
+  document.getElementById('fType').value=item.type||'audio';
+  document.getElementById('fCat').value=item.cat||'Mindset';
+  document.getElementById('fLink').value=item.link||'';
+  document.getElementById('fDuration').value=item.duration||'';
+  document.getElementById('fDesc').value=item.desc||'';
+  selectedEmoji=item.emoji||'📚';
+  buildEmojiGrid();
+  // Update modal title to show "Editeaza"
+  document.querySelector('#addOv .modal-hdr div').textContent='Editeaza titlu';
+  document.getElementById('addOv').classList.add('open');
+  // Close detail modal
+  document.getElementById('detailOv').classList.remove('open');
+  setTimeout(()=>document.getElementById('fLink').focus(),100);
+}
+
 function openAddModal(){
   editingId=null;
   document.getElementById('fTitle').value='';
@@ -938,6 +1010,7 @@ function openAddModal(){
   document.getElementById('fDesc').value='';
   selectedEmoji='📚';
   buildEmojiGrid();
+  document.querySelector('#addOv .modal-hdr div').textContent='Adauga titlu nou';
   document.getElementById('addOv').classList.add('open');
   setTimeout(()=>document.getElementById('fTitle').focus(),100);
 }
