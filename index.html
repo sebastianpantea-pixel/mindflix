@@ -709,32 +709,28 @@ function playItem(id){
 
 /* ═══ AUDIO ═══ */
 function playAudio(item){
-  const audio=document.getElementById('audioEl');
   if(!item.link){toast('Niciun link adaugat pentru acest titlu.');return;}
-  
-  // Convert Google Drive link to direct
-  const url = convertDriveLink(item.link);
-  
+  const isDrive=item.link.includes('drive.google.com');
+  if(isDrive){
+    const m=item.link.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const id=m?m[1]:null;
+    const streamUrl=id?`https://drive.google.com/uc?export=open&id=${id}`:item.link;
+    showDrivePlayer(item,streamUrl);
+    return;
+  }
+  const audio=document.getElementById('audioEl');
   currentItem=item;
-  audio.src=url;
+  audio.src=item.link;
   audio.playbackRate=speeds[speedIdx];
   audio.volume=parseFloat(document.getElementById('volSlider').value);
-  
-  // Restore position
   if(item.position>0)audio.currentTime=item.position;
-  
-  audio.play().catch(()=>{
-    showDriveHelp(item.link);
-  });
-
+  audio.play().catch(()=>{toast('Eroare la redare. Verifica link-ul.');});
   document.getElementById('pThumb').textContent=item.emoji||'🎵';
   document.getElementById('pTitle').textContent=item.title;
   document.getElementById('pAuthor').textContent=(item.author||'')+(item.cat?' · '+item.cat:'');
   document.getElementById('playerBar').style.display='flex';
   document.getElementById('playMainBtn').textContent='⏸';
   isPlaying=true;
-
-  // Progress update
   clearInterval(progInterval);
   progInterval=setInterval(()=>{
     if(audio.duration){
@@ -742,21 +738,49 @@ function playAudio(item){
       document.getElementById('progFill').style.width=pct+'%';
       document.getElementById('pCurrent').textContent=formatTime(audio.currentTime);
       document.getElementById('pDuration').textContent=formatTime(audio.duration);
-      // save progress to DB
-      item.progress=Math.round(pct);
-      item.position=audio.currentTime;
-      save();
+      item.progress=Math.round(pct);item.position=audio.currentTime;save();
     }
   },1000);
-
-  audio.onended=()=>{
-    item.progress=100;item.position=0;save();
-    document.getElementById('playMainBtn').textContent='▶';
-    isPlaying=false;
-    toast('Finalizat! ✓');
-  };
+  audio.onended=()=>{item.progress=100;item.position=0;save();document.getElementById('playMainBtn').textContent='▶';isPlaying=false;toast('Finalizat! ✓');};
 }
 
+/* ═══ DRIVE PLAYER ═══ */
+function showDrivePlayer(item,streamUrl){
+  currentItem=item;
+  const old=document.getElementById('drivePlayerModal');
+  if(old)old.remove();
+  const modal=document.createElement('div');
+  modal.id='drivePlayerModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  modal.innerHTML=`
+    <div style="background:#1A1A1A;border:.5px solid rgba(201,168,76,.3);border-radius:14px;max-width:500px;width:100%;padding:1.75rem;">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="width:48px;height:48px;border-radius:8px;background:#242424;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${item.emoji||'🎵'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:#F0EDE6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(item.title)}</div>
+          <div style="font-size:.75rem;color:#888;margin-top:2px;">${esc(item.author||'')}</div>
+        </div>
+        <button onclick="document.getElementById('drivePlayerModal').remove()" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
+      </div>
+      <audio id="driveAudio" controls style="width:100%;margin-bottom:1.25rem;">
+        <source src="${streamUrl}">
+      </audio>
+      <div style="background:#111;border:.5px solid rgba(201,168,76,.15);border-radius:8px;padding:.9rem;">
+        <div style="font-size:.7rem;color:#C9A84C;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;">Daca nu porneste</div>
+        <p style="font-size:.8rem;color:rgba(240,237,230,.65);line-height:1.6;margin-bottom:.75rem;">Asigura-te ca fisierul in Drive e setat pe <strong style="color:#F0EDE6;">"Anyone with the link"</strong>, apoi apasa:</p>
+        <a href="${item.link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#C9A84C;color:#0A0A0A;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:.82rem;font-weight:600;">↗ Deschide in Google Drive</a>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.onclick=(e)=>{if(e.target===modal)modal.remove();};
+  const da=document.getElementById('driveAudio');
+  if(da){
+    da.playbackRate=speeds[speedIdx];
+    if(item.position>0)da.currentTime=item.position;
+    da.addEventListener('timeupdate',()=>{if(da.duration){item.progress=Math.round((da.currentTime/da.duration)*100);item.position=da.currentTime;save();}});
+    da.addEventListener('ended',()=>{item.progress=100;item.position=0;save();toast('Finalizat! ✓');});
+  }
+}
 /* ═══ VIDEO ═══ */
 function playVideo(item){
   if(!item.link){toast('Niciun link adaugat.');return;}
