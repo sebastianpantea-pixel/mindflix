@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindFlix — Biblioteca ta personala</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --gold:#C9A84C;--gold-light:#E8C96A;--gold-dim:rgba(201,168,76,0.15);
+  --dark:#0A0A0A;--s1:#111111;--s2:#1A1A1A;--s3:#242424;--s4:#2E2E2E;
+  --text:#F0EDE6;--muted:#888;--faint:rgba(240,237,230,0.4);
+  --red:#E5533D;--green:#4CAF7D;--blue:#4A9EE8;--purple:#9B6EE8;
+  --radius:8px;--radius-lg:12px;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--dark);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ── SCROLLBAR ── */
+*{scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.25) transparent;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.25);border-radius:2px;}
+
+/* ── NAV ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2rem;background:rgba(10,10,10,0.97);position:sticky;top:0;z-index:200;border-bottom:0.5px solid rgba(201,168,76,0.12);}
+.logo{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:.06em;cursor:pointer;}
+.logo span{color:var(--text);}
+.nav-links{display:flex;gap:1.5rem;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.82rem;cursor:pointer;transition:color .15s;padding:.25rem 0;border-bottom:2px solid transparent;}
+.nav-links a:hover{color:var(--text);}
+.nav-links a.active{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:.75rem;}
+.search-wrap{display:flex;align-items:center;gap:6px;background:var(--s2);border:.5px solid rgba(201,168,76,0.18);border-radius:6px;padding:6px 12px;transition:border-color .2s;}
+.search-wrap:focus-within{border-color:rgba(201,168,76,0.5);}
+.search-wrap input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.8rem;width:170px;}
+.search-wrap input::placeholder{color:var(--muted);}
+.search-icon{color:var(--muted);font-size:13px;flex-shrink:0;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;color:var(--dark);cursor:pointer;flex-shrink:0;}
+
+/* ── PAGES ── */
+.page{display:none;}.page.active{display:block;}
+
+/* ── HERO ── */
+.hero{position:relative;height:420px;display:flex;align-items:flex-end;padding:0 2rem 2.5rem;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0A0A0A 0%,#1a1200 40%,#2d1f00 70%,#0A0A0A 100%);}
+.hero-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 65% 40%,rgba(201,168,76,0.1) 0%,transparent 65%);}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(10,10,10,.96) 42%,transparent 100%),linear-gradient(to top,rgba(10,10,10,.85) 0%,transparent 55%);}
+.hero-content{position:relative;z-index:2;max-width:580px;}
+.hero-badge{display:inline-flex;align-items:center;gap:5px;background:var(--gold);color:var(--dark);font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:3px;margin-bottom:.75rem;}
+.hero h1{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:700;line-height:1.1;margin-bottom:.75rem;}
+.hero-meta{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;font-size:.78rem;flex-wrap:wrap;}
+.hero-meta .tag{background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.3);color:var(--gold);padding:3px 9px;border-radius:3px;}
+.hero-meta .dot{color:var(--muted);}
+.hero p{color:rgba(240,237,230,.68);font-size:.88rem;line-height:1.65;margin-bottom:1.5rem;max-width:460px;}
+.hero-actions{display:flex;gap:.75rem;flex-wrap:wrap;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;padding:10px 20px;border-radius:6px;font-family:'DM Sans',sans-serif;font-weight:500;font-size:.84rem;cursor:pointer;transition:all .18s;}
+.btn-gold{background:var(--gold);color:var(--dark);}
+.btn-gold:hover{background:var(--gold-light);transform:scale(1.02);}
+.btn-ghost{background:rgba(255,255,255,.08);color:var(--text);border:.5px solid rgba(255,255,255,.18);}
+.btn-ghost:hover{background:rgba(255,255,255,.14);}
+.btn-sm{padding:7px 14px;font-size:.78rem;}
+.btn-danger{background:rgba(229,83,61,.15);color:var(--red);border:.5px solid rgba(229,83,61,.3);}
+.btn-danger:hover{background:rgba(229,83,61,.25);}
+
+/* ── STATS BAR ── */
+.stats-bar{display:flex;gap:0;background:var(--s1);border-bottom:.5px solid rgba(255,255,255,.05);overflow-x:auto;}
+.stat-item{display:flex;align-items:center;gap:10px;padding:1rem 1.5rem;border-right:.5px solid rgba(255,255,255,.06);flex-shrink:0;}
+.stat-icon{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.stat-num{font-size:1.1rem;font-weight:600;line-height:1;}
+.stat-lbl{font-size:.68rem;color:var(--muted);margin-top:2px;}
+
+/* ── PILLS ── */
+.pills{display:flex;gap:.5rem;padding:.85rem 2rem;overflow-x:auto;scrollbar-width:none;background:var(--s1);}
+.pills::-webkit-scrollbar{display:none;}
+.pill{flex-shrink:0;padding:5px 14px;border-radius:20px;font-size:.76rem;font-weight:500;cursor:pointer;border:.5px solid rgba(255,255,255,.1);color:var(--muted);background:var(--s2);transition:all .18s;}
+.pill:hover{border-color:rgba(201,168,76,.3);color:var(--gold);}
+.pill.active{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.4);color:var(--gold);}
+
+/* ── SECTIONS ── */
+.section{padding:1.75rem 2rem .25rem;}
+.section-hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.1rem;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:600;}
+.see-all{font-size:.72rem;color:var(--gold);cursor:pointer;text-transform:uppercase;letter-spacing:.05em;opacity:.8;}
+.see-all:hover{opacity:1;}
+
+/* ── CARD STRIP ── */
+.strip{display:flex;gap:.9rem;overflow-x:auto;padding-bottom:.75rem;scrollbar-width:none;}
+.strip::-webkit-scrollbar{display:none;}
+
+/* ── BOOK CARD (portrait) ── */
+.bcard{flex-shrink:0;width:170px;cursor:pointer;}
+.bcard:hover .bcard-thumb{border-color:rgba(201,168,76,.45);transform:translateY(-4px);}
+.bcard-thumb{width:100%;aspect-ratio:2/3;border-radius:var(--radius);border:.5px solid rgba(255,255,255,.08);overflow:hidden;position:relative;transition:all .22s;}
+.bcard-cover{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.9rem;text-align:center;}
+.bcard-emoji{font-size:2.4rem;margin-bottom:.5rem;}
+.bcard-name{font-family:'Playfair Display',serif;font-size:.78rem;font-weight:600;color:rgba(240,237,230,.95);line-height:1.25;}
+.bcard-author{font-size:.65rem;color:rgba(240,237,230,.45);margin-top:3px;}
+.type-tag{position:absolute;top:8px;right:8px;font-size:.58rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;border-radius:3px;}
+.tag-audio{background:rgba(74,158,232,.2);color:#4A9EE8;border:.5px solid rgba(74,158,232,.3);}
+.tag-video{background:rgba(229,83,61,.2);color:#E5533D;border:.5px solid rgba(229,83,61,.3);}
+.tag-pdf{background:rgba(76,175,125,.2);color:#4CAF7D;border:.5px solid rgba(76,175,125,.3);}
+.tag-course{background:rgba(201,168,76,.2);color:#C9A84C;border:.5px solid rgba(201,168,76,.3);}
+.pbar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.1);}
+.pfill{height:100%;background:var(--gold);border-radius:0 2px 2px 0;}
+.play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);opacity:0;transition:opacity .18s;}
+.bcard:hover .play-ov,.wcard:hover .play-ov{opacity:1;}
+.play-circle{width:40px;height:40px;border-radius:50%;background:rgba(201,168,76,.9);display:flex;align-items:center;justify-content:center;color:var(--dark);font-size:14px;padding-left:2px;}
+.bcard-lbl{font-size:.76rem;font-weight:500;margin-top:.55rem;line-height:1.3;color:var(--text);}
+.bcard-sub{font-size:.67rem;color:var(--muted);margin-top:1px;}
+
+/* ── WIDE CARD (landscape) ── */
+.wcard{flex-shrink:0;width:260px;cursor:pointer;}
+.wcard:hover .wcard-thumb{border-color:rgba(201,168,76,.45);transform:translateY(-3px);}
+.wcard-thumb{width:100%;aspect-ratio:16/9;border-radius:var(--radius);border:.5px solid rgba(255,255,255,.08);overflow:hidden;position:relative;margin-bottom:.65rem;transition:all .22s;}
+.wcard-cover{width:100%;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:.85rem;position:relative;overflow:hidden;}
+.wcard-icon{position:absolute;top:50%;left:50%;transform:translate(-50%,-58%);font-size:2.8rem;opacity:.55;}
+.wcard-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 60%);}
+.wcard-title{font-family:'Playfair Display',serif;font-size:.88rem;font-weight:600;color:rgba(240,237,230,.95);line-height:1.2;position:relative;z-index:2;}
+.wcard-lbl{font-size:.76rem;font-weight:500;color:var(--text);}
+.wcard-sub{font-size:.67rem;color:var(--muted);margin-top:1px;}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{border:1px dashed rgba(201,168,76,.3);border-radius:10px;padding:2rem;text-align:center;margin:0 2rem;cursor:pointer;transition:all .2s;background:rgba(201,168,76,.02);}
+.upload-zone:hover{border-color:rgba(201,168,76,.6);background:rgba(201,168,76,.05);}
+.upload-ico{font-size:2rem;margin-bottom:.5rem;}
+.upload-ttl{font-size:.9rem;font-weight:500;margin-bottom:4px;}
+.upload-sub{font-size:.75rem;color:var(--muted);}
+
+/* ── PLAYER BAR ── */
+#playerBar{position:fixed;bottom:0;left:0;right:0;background:rgba(14,14,14,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:.5px solid rgba(201,168,76,.2);padding:10px 2rem;display:none;align-items:center;gap:1.25rem;z-index:300;}
+.player-info{display:flex;align-items:center;gap:10px;min-width:210px;flex:1;}
+.player-thumb{width:46px;height:46px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:.5px solid rgba(255,255,255,.08);}
+.p-playing{font-size:.62rem;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1px;}
+.p-title{font-size:.82rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.p-author{font-size:.7rem;color:var(--muted);}
+.player-ctrl{display:flex;flex-direction:column;align-items:center;gap:.45rem;flex:2;max-width:520px;}
+.ctrl-row{display:flex;align-items:center;gap:1.1rem;}
+.ctrl-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:4px;transition:color .15s;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+.ctrl-btn:hover{color:var(--text);}
+.ctrl-btn.play-main{width:36px;height:36px;border-radius:50%;background:var(--gold);color:var(--dark);font-size:13px;padding-left:2px;}
+.ctrl-btn.play-main:hover{background:var(--gold-light);}
+.prog-row{display:flex;align-items:center;gap:8px;width:100%;}
+.time-lbl{font-size:.66rem;color:var(--muted);min-width:34px;}
+.time-lbl.right{text-align:right;}
+.prog-track{flex:1;height:3px;background:rgba(255,255,255,.1);border-radius:2px;position:relative;cursor:pointer;}
+.prog-fill{height:100%;background:var(--gold);border-radius:2px;width:0%;position:relative;transition:width .5s linear;}
+.prog-fill::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--gold);}
+.player-right{display:flex;align-items:center;gap:.65rem;flex:1;justify-content:flex-end;}
+.speed-badge{background:rgba(201,168,76,.12);border:.5px solid rgba(201,168,76,.28);color:var(--gold);font-size:.7rem;font-weight:600;padding:3px 9px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.speed-badge:hover{background:rgba(201,168,76,.22);}
+.vol-slider{width:70px;accent-color:var(--gold);}
+
+/* ── MODAL ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-ov.open{display:flex;}
+.modal{background:var(--s1);border:.5px solid rgba(201,168,76,.2);border-radius:var(--radius-lg);max-width:520px;width:100%;overflow:hidden;max-height:90vh;overflow-y:auto;}
+.modal-hdr{padding:1.4rem 1.5rem;border-bottom:.5px solid rgba(255,255,255,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;}
+.modal-cover{width:56px;height:80px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;border:.5px solid rgba(255,255,255,.1);}
+.modal-ttl{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:600;margin-bottom:3px;}
+.modal-auth{font-size:.78rem;color:var(--muted);}
+.modal-close-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;}
+.modal-body{padding:1.4rem 1.5rem;}
+.modal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem;}
+.m-tag{background:rgba(201,168,76,.1);border:.5px solid rgba(201,168,76,.25);color:var(--gold);font-size:.7rem;padding:3px 8px;border-radius:3px;}
+.modal-desc{font-size:.84rem;color:rgba(240,237,230,.68);line-height:1.7;margin-bottom:1.25rem;}
+.modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.25rem;}
+.mstat{background:var(--s2);border-radius:6px;padding:.75rem;text-align:center;}
+.mstat-num{font-size:.9rem;font-weight:600;color:var(--text);}
+.mstat-lbl{font-size:.65rem;color:var(--muted);margin-top:2px;}
+.modal-actions{display:flex;gap:.65rem;flex-wrap:wrap;}
+.prog-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:.5rem;}
+.prog-bar-full{width:100%;height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin-bottom:1.25rem;overflow:hidden;}
+.prog-bar-full .pfill{height:100%;}
+
+/* ── ADD FORM MODAL ── */
+.form-group{margin-bottom:1.1rem;}
+.form-label{display:block;font-size:.78rem;font-weight:500;color:var(--text);margin-bottom:.4rem;}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--s2);border:.5px solid rgba(255,255,255,.12);border-radius:6px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;transition:border-color .18s;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:rgba(201,168,76,.5);}
+.form-input::placeholder{color:var(--muted);}
+.form-select option{background:var(--s2);}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.5;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+.emoji-grid{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem;}
+.emoji-opt{font-size:1.2rem;cursor:pointer;padding:.25rem;border-radius:4px;transition:background .15s;border:1.5px solid transparent;}
+.emoji-opt:hover{background:var(--s3);}
+.emoji-opt.sel{border-color:var(--gold);background:var(--gold-dim);}
+
+/* ── LIBRARY PAGE ── */
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;padding:1.5rem 2rem;padding-bottom:100px;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:3rem 2rem;color:var(--muted);}
+.empty-ico{font-size:3rem;margin-bottom:.75rem;}
+.empty-ttl{font-size:.95rem;font-weight:500;color:var(--text);margin-bottom:.4rem;}
+.empty-sub{font-size:.8rem;line-height:1.6;}
+
+/* ── VIDEO PLAYER ── */
+#videoWrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:400;flex-direction:column;align-items:center;justify-content:center;}
+#videoWrap.open{display:flex;}
+#videoFrame{width:100%;max-width:900px;aspect-ratio:16/9;border:none;border-radius:var(--radius);background:#000;}
+#videoClose{position:absolute;top:1.25rem;right:1.5rem;background:rgba(255,255,255,.1);border:none;color:var(--text);font-size:1.1rem;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+#videoClose:hover{background:rgba(255,255,255,.2);}
+#videoTitle{margin-top:1rem;font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:var(--text);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s3);border:.5px solid rgba(201,168,76,.3);color:var(--text);padding:.6rem 1.2rem;border-radius:6px;font-size:.8rem;z-index:600;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  nav{padding:.75rem 1rem;}.nav-links{display:none;}
+  .hero{height:340px;padding:0 1rem 2rem;}.hero h1{font-size:2rem;}
+  .section{padding:1.25rem 1rem .25rem;}.lib-grid{padding:1rem;}
+  #playerBar{padding:10px 1rem;gap:.75rem;}.vol-slider{display:none;}
+  .player-info{min-width:0;}.p-title{max-width:120px;}
+  .search-wrap input{width:110px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo" onclick="goPage('home')">Mind<span>Flix</span></div>
+  <div class="nav-links">
+    <a id="tab-home" class="active" onclick="goPage('home')">Acasa</a>
+    <a id="tab-library" onclick="goPage('library')">Biblioteca mea</a>
+    <a id="tab-add" onclick="openAddModal()">+ Adauga</a>
+  </div>
+  <div class="nav-right">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Cauta titluri, autori..." oninput="doSearch()"/>
+    </div>
+    <div class="avatar">SP</div>
+  </div>
+</nav>
+
+<!-- ═══ HOME PAGE ═══ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <div class="hero" id="heroSection">
+    <div class="hero-bg"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content" id="heroContent">
+      <div class="hero-badge" id="heroBadge">▶ Continua de unde ai ramas</div>
+      <h1 id="heroTitle">Biblioteca ta<br>personala</h1>
+      <div class="hero-meta" id="heroMeta">
+        <span class="tag" id="heroType">Dezvoltare personala</span>
+        <span class="dot">·</span>
+        <span id="heroAuthor" style="color:var(--muted)">Adauga primul tau titlu</span>
+      </div>
+      <p id="heroDesc">Toate cursurile, audiobook-urile si rezumatele tale intr-un singur loc. Acces instant de pe orice dispozitiv.</p>
+      <div class="hero-actions">
+        <button class="btn btn-gold" id="heroCTA" onclick="heroPlay()">▶  Incepe</button>
+        <button class="btn btn-ghost" onclick="openAddModal()">+ Adauga titlu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-icon" style="background:rgba(201,168,76,.1);">📚</div>
+      <div><div class="stat-num" id="statTotal">0</div><div class="stat-lbl">titluri</div></div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon" style="background:rgba(76,175,125,.1);">✓</div>
+      <div><div class="stat-num" id="statDone">0</div><div class="stat-lbl">finalizate</div></div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon" style="background:rgba(74,158,232,.1);">⏱</div>
+      <div><div class="stat-num" id="statTime">0h</div><div class="stat-lbl">timp total</div></div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon" style="background:rgba(229,83,61,.1);">🔥</div>
+      <div><div class="stat-num" id="statStreak">0</div><div class="stat-lbl">zile la rand</div></div>
+    </div>
+  </div>
+
+  <!-- CATEGORY PILLS -->
+  <div class="pills" id="catPills">
+    <div class="pill active" onclick="filterCat(this,'')">Tot</div>
+    <div class="pill" onclick="filterCat(this,'Finante')">Finante</div>
+    <div class="pill" onclick="filterCat(this,'Mindset')">Mindset</div>
+    <div class="pill" onclick="filterCat(this,'Productivitate')">Productivitate</div>
+    <div class="pill" onclick="filterCat(this,'Leadership')">Leadership</div>
+    <div class="pill" onclick="filterCat(this,'Sanatate')">Sanatate</div>
+    <div class="pill" onclick="filterCat(this,'Relatii')">Relatii</div>
+    <div class="pill" onclick="filterCat(this,'Spiritualitate')">Spiritualitate</div>
+  </div>
+
+  <!-- IN PROGRESS -->
+  <div class="section" id="sec-inprog">
+    <div class="section-hdr"><div class="section-title">Continua sa inveti</div><div class="see-all" onclick="goPage('library')">Vezi tot</div></div>
+    <div class="strip" id="strip-inprog"><div class="empty" style="padding:1rem 0;"><div class="empty-sub">Niciun titlu in progress</div></div></div>
+  </div>
+
+  <!-- ALL / FILTERED -->
+  <div class="section" id="sec-all">
+    <div class="section-hdr"><div class="section-title" id="secAllTitle">Toata biblioteca</div><div class="see-all" onclick="goPage('library')">Vezi tot</div></div>
+    <div class="strip" id="strip-all">
+      <div class="empty"><div class="empty-ico">📭</div><div class="empty-ttl">Biblioteca e goala</div><div class="empty-sub">Apasa "+ Adauga" pentru a incepe.</div></div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="section" style="margin-top:1rem;padding-bottom:120px;">
+    <div class="upload-zone" onclick="openAddModal()">
+      <div class="upload-ico">⊕</div>
+      <div class="upload-ttl">Adauga un titlu nou</div>
+      <div class="upload-sub">Link Google Drive, OneDrive, YouTube · MP3 · MP4 · PDF</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ LIBRARY PAGE ═══ -->
+<div class="page" id="page-library">
+  <div style="padding:1.5rem 2rem .5rem;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;">Biblioteca mea</div>
+    <button class="btn btn-gold btn-sm" onclick="openAddModal()">+ Adauga titlu</button>
+  </div>
+  <div class="lib-grid" id="libGrid">
+    <div class="empty" style="grid-column:1/-1">
+      <div class="empty-ico">📚</div>
+      <div class="empty-ttl">Niciun titlu inca</div>
+      <div class="empty-sub">Apasa "+ Adauga titlu" ca sa incepi.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PLAYER BAR ═══ -->
+<div id="playerBar">
+  <div class="player-info">
+    <div class="player-thumb" id="pThumb">🎵</div>
+    <div>
+      <div class="p-playing">Redare acum</div>
+      <div class="p-title" id="pTitle">—</div>
+      <div class="p-author" id="pAuthor">—</div>
+    </div>
+  </div>
+  <div class="player-ctrl">
+    <div class="ctrl-row">
+      <button class="ctrl-btn" onclick="seekRel(-30)" title="-30s" style="font-size:12px;">↺ 30</button>
+      <button class="ctrl-btn" onclick="prevTrack()">⏮</button>
+      <button class="ctrl-btn play-main" id="playMainBtn" onclick="togglePlay()">▶</button>
+      <button class="ctrl-btn" onclick="nextTrack()">⏭</button>
+      <button class="ctrl-btn" onclick="seekRel(30)" title="+30s" style="font-size:12px;">30 ↻</button>
+    </div>
+    <div class="prog-row">
+      <span class="time-lbl" id="pCurrent">0:00</span>
+      <div class="prog-track" id="progTrack" onclick="seekClick(event)">
+        <div class="prog-fill" id="progFill"></div>
+      </div>
+      <span class="time-lbl right" id="pDuration">0:00</span>
+    </div>
+  </div>
+  <div class="player-right">
+    <span class="speed-badge" id="speedBadge" onclick="cycleSpeed()">1×</span>
+    <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="0.8" oninput="setVol(this.value)">
+    <button class="ctrl-btn" onclick="closePlayer()" style="font-size:13px;">✕</button>
+  </div>
+</div>
+
+<!-- ═══ DETAIL MODAL ═══ -->
+<div class="modal-ov" id="detailOv" onclick="closeDetailModal(event)">
+  <div class="modal" id="detailModal">
+    <div class="modal-hdr">
+      <div style="display:flex;align-items:flex-start;gap:.85rem;">
+        <div class="modal-cover" id="mCover">🎵</div>
+        <div>
+          <div class="modal-ttl" id="mTitle">—</div>
+          <div class="modal-auth" id="mAuth">—</div>
+          <div style="margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap;" id="mTypeTags"></div>
+        </div>
+      </div>
+      <button class="modal-close-btn" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="prog-label">
+        <span>Progres</span><span id="mProgLabel">0%</span>
+      </div>
+      <div class="prog-bar-full"><div class="pfill" id="mProgFill" style="width:0%"></div></div>
+      <div class="modal-tags" id="mTags"></div>
+      <div class="modal-desc" id="mDesc">—</div>
+      <div class="modal-stats" id="mStats"></div>
+      <div class="modal-actions" id="mActions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD MODAL ═══ -->
+<div class="modal-ov" id="addOv" onclick="closeAddModalEv(event)">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hdr" style="align-items:center;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;">Adauga titlu nou</div>
+      <button class="modal-close-btn" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Titlu *</label>
+        <input class="form-input" id="fTitle" placeholder="ex: Atomic Habits">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Autor</label>
+        <input class="form-input" id="fAuthor" placeholder="ex: James Clear">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tip *</label>
+          <select class="form-select" id="fType">
+            <option value="audio">🎵 Audiobook / Podcast</option>
+            <option value="video">🎬 Curs Video</option>
+            <option value="pdf">📄 PDF / Ebook</option>
+            <option value="course">🎓 Curs complet</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categorie</label>
+          <select class="form-select" id="fCat">
+            <option>Finante</option>
+            <option>Mindset</option>
+            <option>Productivitate</option>
+            <option>Leadership</option>
+            <option>Sanatate</option>
+            <option>Relatii</option>
+            <option>Spiritualitate</option>
+            <option>Vanzari</option>
+            <option>Alta</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link continut <span style="color:var(--muted);font-weight:400;">(Google Drive, OneDrive, YouTube, direct MP3/MP4)</span></label>
+        <input class="form-input" id="fLink" placeholder="https://drive.google.com/... sau https://youtu.be/...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Durata totala</label>
+        <input class="form-input" id="fDuration" placeholder="ex: 5h 48m sau 207 pag">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descriere scurta</label>
+        <textarea class="form-textarea" id="fDesc" placeholder="Despre ce este..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji / Icona</label>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
+      <div style="display:flex;gap:.65rem;margin-top:1.25rem;">
+        <button class="btn btn-gold" style="flex:1;" onclick="saveItem()">Salveaza</button>
+        <button class="btn btn-ghost" onclick="closeAddModal()">Anuleaza</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIDEO WRAP ═══ -->
+<div id="videoWrap">
+  <button id="videoClose" onclick="closeVideo()">✕</button>
+  <iframe id="videoFrame" allowfullscreen allow="autoplay"></iframe>
+  <div id="videoTitle"></div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toast"></div>
+
+<!-- ═══ HIDDEN AUDIO ═══ -->
+<audio id="audioEl" preload="metadata"></audio>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════ */
+const EMOJIS=['📚','🎯','💡','🧠','💰','⚡','🌊','🔑','🌱','🎓','📈','🗣️','🧘','🔥','⭐','🌟','📖','💎','🚀','⚛️','🎪','🏆','🛡️','🎭'];
+let DB = JSON.parse(localStorage.getItem('mindflix_db') || '[]');
+let currentCat = '';
+let currentItem = null;
+let isPlaying = false;
+let speeds = [0.75,1,1.25,1.5,1.75,2];
+let speedIdx = 1;
+let progInterval = null;
+let selectedEmoji = '📚';
+let editingId = null;
+
+/* ═══════════════════════════════════════════════════
+   SAVE / LOAD
+═══════════════════════════════════════════════════ */
+function save(){localStorage.setItem('mindflix_db',JSON.stringify(DB));}
+
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+
+/* ═══════════════════════════════════════════════════
+   PAGES
+═══════════════════════════════════════════════════ */
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  const t=document.getElementById('tab-'+id);
+  if(t)t.classList.add('active');
+  if(id==='home')renderHome();
+  if(id==='library')renderLibrary();
+  window.scrollTo(0,0);
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDER HOME
+═══════════════════════════════════════════════════ */
+function renderHome(){
+  updateStats();
+  renderHero();
+  renderStrip('strip-inprog', inProgressItems());
+  renderStrip('strip-all', filteredItems());
+  const t=document.getElementById('secAllTitle');
+  t.textContent = currentCat ? currentCat : 'Toata biblioteca';
+}
+
+function inProgressItems(){
+  return DB.filter(i=>i.progress>0&&i.progress<100).sort((a,b)=>b.lastPlayed-a.lastPlayed);
+}
+
+function filteredItems(){
+  return DB.filter(i=>!currentCat||i.cat===currentCat);
+}
+
+function renderHero(){
+  const recent = DB.slice().sort((a,b)=>b.lastPlayed-a.lastPlayed)[0];
+  if(!recent)return;
+  const h=document.getElementById('heroTitle');
+  h.innerHTML = recent.title.replace(' ','<br>');
+  document.getElementById('heroBadge').textContent = recent.progress>0?'▶ Continua de unde ai ramas':'▶ Incepe acum';
+  document.getElementById('heroAuthor').textContent = recent.author||'';
+  document.getElementById('heroType').textContent = typeLabel(recent.type);
+  document.getElementById('heroDesc').textContent = recent.desc||'Apasa pentru a incepe.';
+  const cta=document.getElementById('heroCTA');
+  cta.textContent = (recent.progress>0?'▶  Continua':'▶  Incepe');
+  window._heroItem=recent;
+}
+
+function heroPlay(){
+  if(window._heroItem)openDetail(window._heroItem.id);
+}
+
+function renderStrip(stripId, items){
+  const el=document.getElementById(stripId);
+  if(!items.length){
+    el.innerHTML='<div class="empty" style="padding:1rem 0;color:var(--muted);font-size:.8rem;">Niciun titlu inca</div>';
+    return;
+  }
+  el.innerHTML=items.map(i=>bookCardHTML(i)).join('');
+}
+
+function bookCardHTML(item){
+  const pct=item.progress||0;
+  const tagClass={'audio':'tag-audio','video':'tag-video','pdf':'tag-pdf','course':'tag-course'}[item.type]||'tag-course';
+  const tagLbl={'audio':'Audio','video':'Video','pdf':'PDF','course':'Curs'}[item.type]||'Curs';
+  const bg=coverBg(item.type);
+  return `<div class="bcard" onclick="openDetail('${item.id}')">
+    <div class="bcard-thumb">
+      <div class="bcard-cover" style="${bg}">
+        <span class="type-tag ${tagClass}">${tagLbl}</span>
+        <div class="bcard-emoji">${item.emoji||'📚'}</div>
+        <div class="bcard-name">${esc(item.title)}</div>
+        ${item.author?`<div class="bcard-author">${esc(item.author)}</div>`:''}
+      </div>
+      ${pct>0?`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`:''}
+      <div class="play-ov"><div class="play-circle">▶</div></div>
+    </div>
+    <div class="bcard-lbl">${esc(item.title)}</div>
+    <div class="bcard-sub">${pct>0?pct+'% · ':''}${item.duration||typeLabel(item.type)}</div>
+  </div>`;
+}
+
+function coverBg(type){
+  const bgs={
+    audio:'background:linear-gradient(135deg,#0a1a2a,#1a2a4a)',
+    video:'background:linear-gradient(135deg,#2a0a0a,#4a1010)',
+    pdf:'background:linear-gradient(135deg,#0a2a1a,#0a3a2a)',
+    course:'background:linear-gradient(135deg,#1a1a0a,#2a2a10)'
+  };
+  return bgs[type]||bgs.audio;
+}
+
+function typeLabel(t){return{'audio':'Audiobook','video':'Video','pdf':'PDF / Ebook','course':'Curs'}[t]||t;}
+
+/* ═══════════════════════════════════════════════════
+   RENDER LIBRARY
+═══════════════════════════════════════════════════ */
+function renderLibrary(){
+  const grid=document.getElementById('libGrid');
+  if(!DB.length){
+    grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-ico">📚</div><div class="empty-ttl">Biblioteca e goala</div><div class="empty-sub">Apasa "+ Adauga titlu" ca sa incepi.</div></div>';
+    return;
+  }
+  grid.innerHTML=DB.map(i=>bookCardHTML(i)).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   STATS
+═══════════════════════════════════════════════════ */
+function updateStats(){
+  document.getElementById('statTotal').textContent=DB.length;
+  document.getElementById('statDone').textContent=DB.filter(i=>i.progress>=100).length;
+  const today=new Date().toDateString();
+  const streak=parseInt(localStorage.getItem('mf_streak')||'0');
+  const lastDay=localStorage.getItem('mf_lastday')||'';
+  document.getElementById('statStreak').textContent=streak;
+  document.getElementById('statTime').textContent=(DB.length*2)+'h';
+}
+
+/* ═══════════════════════════════════════════════════
+   FILTER
+═══════════════════════════════════════════════════ */
+function filterCat(el, cat){
+  currentCat=cat;
+  document.querySelectorAll('#catPills .pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderStrip('strip-all', filteredItems());
+  document.getElementById('secAllTitle').textContent=cat||'Toata biblioteca';
+}
+
+/* ═══════════════════════════════════════════════════
+   SEARCH
+═══════════════════════════════════════════════════ */
+function doSearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  if(!q){renderHome();return;}
+  const res=DB.filter(i=>i.title.toLowerCase().includes(q)||( i.author&&i.author.toLowerCase().includes(q)));
+  renderStrip('strip-all',res);
+}
+
+/* ═══════════════════════════════════════════════════
+   DETAIL MODAL
+═══════════════════════════════════════════════════ */
+function openDetail(id){
+  const item=DB.find(i=>i.id===id);
+  if(!item)return;
+  currentItem=item;
+  const tagClass={'audio':'tag-audio','video':'tag-video','pdf':'tag-pdf','course':'tag-course'}[item.type]||'tag-course';
+  const tagLbl={'audio':'Audiobook','video':'Video / Curs','pdf':'PDF / Ebook','course':'Curs complet'}[item.type]||'';
+  const bg=coverBg(item.type);
+  document.getElementById('mCover').style=bg.replace('background:','')+';border:.5px solid rgba(255,255,255,.1);';
+  document.getElementById('mCover').textContent=item.emoji||'📚';
+  document.getElementById('mTitle').textContent=item.title;
+  document.getElementById('mAuth').textContent=(item.author||'')+(item.cat?' · '+item.cat:'');
+  document.getElementById('mTypeTags').innerHTML=`<span class="type-tag ${tagClass}" style="position:static;font-size:.65rem;">${tagLbl}</span>`;
+  const pct=item.progress||0;
+  document.getElementById('mProgLabel').textContent=pct+'%';
+  document.getElementById('mProgFill').style.width=pct+'%';
+  document.getElementById('mTags').innerHTML=item.cat?`<span class="m-tag">${item.cat}</span>`:'';
+  document.getElementById('mDesc').textContent=item.desc||'Fara descriere.';
+  document.getElementById('mStats').innerHTML=`
+    <div class="mstat"><div class="mstat-num">${item.duration||'—'}</div><div class="mstat-lbl">Durata</div></div>
+    <div class="mstat"><div class="mstat-num">${pct}%</div><div class="mstat-lbl">Finalizat</div></div>
+    <div class="mstat"><div class="mstat-num">${item.lastPlayed?'Da':'Nu'}</div><div class="mstat-lbl">Redat</div></div>
+  `;
+  const playLabel = item.type==='pdf'?'📄  Deschide PDF': item.type==='video'?'▶  Reda Video':'▶  Reda Audio';
+  document.getElementById('mActions').innerHTML=`
+    <button class="btn btn-gold" onclick="playItem('${item.id}')">${playLabel}</button>
+    <button class="btn btn-ghost btn-sm" onclick="markDone('${item.id}')">✓ Finalizat</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">🗑 Sterge</button>
+  `;
+  document.getElementById('detailOv').classList.add('open');
+  // update lastPlayed
+  item.lastPlayed=Date.now();
+  save();
+}
+
+function closeDetailModal(e){
+  if(!e||e.target===document.getElementById('detailOv')||e===undefined){
+    document.getElementById('detailOv').classList.remove('open');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   PLAY ITEM
+═══════════════════════════════════════════════════ */
+function playItem(id){
+  const item=DB.find(i=>i.id===id)||currentItem;
+  if(!item)return;
+  closeDetailModal();
+
+  if(item.type==='video'){
+    playVideo(item);
+  } else if(item.type==='pdf'){
+    openPDF(item);
+  } else {
+    playAudio(item);
+  }
+  // update streak
+  const today=new Date().toDateString();
+  const lastDay=localStorage.getItem('mf_lastday')||'';
+  let streak=parseInt(localStorage.getItem('mf_streak')||'0');
+  if(lastDay!==today){
+    const yesterday=new Date(Date.now()-86400000).toDateString();
+    streak = (lastDay===yesterday)?streak+1:1;
+    localStorage.setItem('mf_streak',streak);
+    localStorage.setItem('mf_lastday',today);
+  }
+}
+
+/* ═══ AUDIO ═══ */
+function playAudio(item){
+  const audio=document.getElementById('audioEl');
+  if(!item.link){toast('Niciun link adaugat pentru acest titlu.');return;}
+  
+  // Convert Google Drive link to direct
+  const url = convertDriveLink(item.link);
+  
+  currentItem=item;
+  audio.src=url;
+  audio.playbackRate=speeds[speedIdx];
+  audio.volume=parseFloat(document.getElementById('volSlider').value);
+  
+  // Restore position
+  if(item.position>0)audio.currentTime=item.position;
+  
+  audio.play().catch(()=>{
+    toast('Nu pot reda direct. Deschid intr-o noua fereastra...');
+    window.open(item.link,'_blank');
+  });
+
+  document.getElementById('pThumb').textContent=item.emoji||'🎵';
+  document.getElementById('pTitle').textContent=item.title;
+  document.getElementById('pAuthor').textContent=(item.author||'')+(item.cat?' · '+item.cat:'');
+  document.getElementById('playerBar').style.display='flex';
+  document.getElementById('playMainBtn').textContent='⏸';
+  isPlaying=true;
+
+  // Progress update
+  clearInterval(progInterval);
+  progInterval=setInterval(()=>{
+    if(audio.duration){
+      const pct=(audio.currentTime/audio.duration)*100;
+      document.getElementById('progFill').style.width=pct+'%';
+      document.getElementById('pCurrent').textContent=formatTime(audio.currentTime);
+      document.getElementById('pDuration').textContent=formatTime(audio.duration);
+      // save progress to DB
+      item.progress=Math.round(pct);
+      item.position=audio.currentTime;
+      save();
+    }
+  },1000);
+
+  audio.onended=()=>{
+    item.progress=100;item.position=0;save();
+    document.getElementById('playMainBtn').textContent='▶';
+    isPlaying=false;
+    toast('Finalizat! ✓');
+  };
+}
+
+/* ═══ VIDEO ═══ */
+function playVideo(item){
+  if(!item.link){toast('Niciun link adaugat.');return;}
+  const url=convertYouTube(item.link);
+  document.getElementById('videoFrame').src=url;
+  document.getElementById('videoTitle').textContent=item.title;
+  document.getElementById('videoWrap').classList.add('open');
+  currentItem=item;
+  item.progress=Math.max(item.progress||0,5);
+  save();
+}
+
+function closeVideo(){
+  document.getElementById('videoWrap').classList.remove('open');
+  document.getElementById('videoFrame').src='';
+}
+
+/* ═══ PDF ═══ */
+function openPDF(item){
+  if(!item.link){toast('Niciun link adaugat.');return;}
+  window.open(item.link,'_blank');
+  item.progress=Math.max(item.progress||0,5);save();
+}
+
+/* ═══ LINK CONVERTERS ═══ */
+function convertDriveLink(url){
+  // Google Drive share link -> direct download stream
+  const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m)return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  // OneDrive
+  if(url.includes('1drv.ms')||url.includes('onedrive.live.com'))return url;
+  return url;
+}
+
+function convertYouTube(url){
+  let id='';
+  const m1=url.match(/youtu\.be\/([^?]+)/);
+  const m2=url.match(/youtube\.com\/watch\?v=([^&]+)/);
+  if(m1)id=m1[1];
+  else if(m2)id=m2[1];
+  if(id)return `https://www.youtube.com/embed/${id}?autoplay=1`;
+  return url;
+}
+
+/* ═══════════════════════════════════════════════════
+   PLAYER CONTROLS
+═══════════════════════════════════════════════════ */
+function togglePlay(){
+  const audio=document.getElementById('audioEl');
+  if(isPlaying){audio.pause();document.getElementById('playMainBtn').textContent='▶';}
+  else{audio.play();document.getElementById('playMainBtn').textContent='⏸';}
+  isPlaying=!isPlaying;
+}
+
+function seekRel(sec){
+  const audio=document.getElementById('audioEl');
+  audio.currentTime=Math.max(0,audio.currentTime+sec);
+}
+
+function seekClick(e){
+  const audio=document.getElementById('audioEl');
+  if(!audio.duration)return;
+  const rect=document.getElementById('progTrack').getBoundingClientRect();
+  const pct=(e.clientX-rect.left)/rect.width;
+  audio.currentTime=pct*audio.duration;
+}
+
+function cycleSpeed(){
+  speedIdx=(speedIdx+1)%speeds.length;
+  const spd=speeds[speedIdx];
+  document.getElementById('audioEl').playbackRate=spd;
+  document.getElementById('speedBadge').textContent=spd+'×';
+}
+
+function setVol(v){document.getElementById('audioEl').volume=parseFloat(v);}
+
+function closePlayer(){
+  clearInterval(progInterval);
+  document.getElementById('audioEl').pause();
+  document.getElementById('playerBar').style.display='none';
+  isPlaying=false;
+}
+
+function prevTrack(){toast('Navigheaza din biblioteca ta.');}
+function nextTrack(){toast('Navigheaza din biblioteca ta.');}
+
+/* ═══════════════════════════════════════════════════
+   ADD / EDIT MODAL
+═══════════════════════════════════════════════════ */
+function openAddModal(){
+  editingId=null;
+  document.getElementById('fTitle').value='';
+  document.getElementById('fAuthor').value='';
+  document.getElementById('fType').value='audio';
+  document.getElementById('fCat').value='Mindset';
+  document.getElementById('fLink').value='';
+  document.getElementById('fDuration').value='';
+  document.getElementById('fDesc').value='';
+  selectedEmoji='📚';
+  buildEmojiGrid();
+  document.getElementById('addOv').classList.add('open');
+  setTimeout(()=>document.getElementById('fTitle').focus(),100);
+}
+
+function closeAddModal(){document.getElementById('addOv').classList.remove('open');}
+function closeAddModalEv(e){if(e.target===document.getElementById('addOv'))closeAddModal();}
+
+function buildEmojiGrid(){
+  const grid=document.getElementById('emojiGrid');
+  grid.innerHTML=EMOJIS.map(e=>`<span class="emoji-opt${e===selectedEmoji?' sel':''}" onclick="selEmoji(this,'${e}')">${e}</span>`).join('');
+}
+
+function selEmoji(el,e){
+  selectedEmoji=e;
+  document.querySelectorAll('.emoji-opt').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function saveItem(){
+  const title=document.getElementById('fTitle').value.trim();
+  if(!title){toast('Titlul e obligatoriu!');return;}
+  const item={
+    id:editingId||genId(),
+    title,
+    author:document.getElementById('fAuthor').value.trim(),
+    type:document.getElementById('fType').value,
+    cat:document.getElementById('fCat').value,
+    link:document.getElementById('fLink').value.trim(),
+    duration:document.getElementById('fDuration').value.trim(),
+    desc:document.getElementById('fDesc').value.trim(),
+    emoji:selectedEmoji,
+    progress:0,
+    position:0,
+    lastPlayed:Date.now(),
+    added:Date.now()
+  };
+  if(editingId){
+    const idx=DB.findIndex(i=>i.id===editingId);
+    if(idx>-1){item.progress=DB[idx].progress;item.position=DB[idx].position;DB[idx]=item;}
+  } else {
+    DB.unshift(item);
+  }
+  save();
+  closeAddModal();
+  renderHome();
+  if(document.getElementById('page-library').classList.contains('active'))renderLibrary();
+  toast('Titlu salvat! ✓');
+}
+
+/* ═══════════════════════════════════════════════════
+   ACTIONS
+═══════════════════════════════════════════════════ */
+function markDone(id){
+  const item=DB.find(i=>i.id===id);
+  if(item){item.progress=100;item.position=0;save();toast('Marcat ca finalizat ✓');closeDetailModal();renderHome();}
+}
+
+function deleteItem(id){
+  if(!confirm('Stergi acest titlu din biblioteca?'))return;
+  DB=DB.filter(i=>i.id!==id);
+  save();
+  closeDetailModal();
+  renderHome();
+  if(document.getElementById('page-library').classList.contains('active'))renderLibrary();
+  toast('Titlu sters.');
+}
+
+/* ═══════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════ */
+function formatTime(s){
+  if(isNaN(s))return '0:00';
+  const m=Math.floor(s/60),sec=Math.floor(s%60);
+  return m+':'+(sec<10?'0':'')+sec;
+}
+
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+renderHome();
+
+// Demo data daca DB e gol
+if(!DB.length){
+  const demo=[
+    {id:genId(),title:'The Psychology of Money',author:'Morgan Housel',type:'audio',cat:'Finante',link:'',duration:'5h 48m',desc:'Cele mai importante 20 de lectii despre bani, lacomie si fericire.',emoji:'💰',progress:40,position:0,lastPlayed:Date.now()-1000,added:Date.now()},
+    {id:genId(),title:'Atomic Habits',author:'James Clear',type:'course',cat:'Productivitate',link:'',duration:'4h 20m',desc:'Sistem practic pentru construirea de obiceiuri bune si eliminarea celor rele.',emoji:'⚛️',progress:75,position:0,lastPlayed:Date.now()-5000,added:Date.now()},
+    {id:genId(),title:'Reality Transurfing',author:'Vadim Zeland',type:'audio',cat:'Mindset',link:'',duration:'12h',desc:'O perspectiva fascinanta asupra realitatii si modului in care o cream.',emoji:'🌊',progress:20,position:0,lastPlayed:Date.now()-10000,added:Date.now()},
+    {id:genId(),title:'Deep Work',author:'Cal Newport',type:'audio',cat:'Productivitate',link:'',duration:'4h 44m',desc:'Reguli de succes pentru o lume distrasa — concentrare fara distrageri.',emoji:'💡',progress:0,position:0,lastPlayed:Date.now()-20000,added:Date.now()},
+  ];
+  DB=demo;save();renderHome();
+}
+</script>
+</body>
+</html>
