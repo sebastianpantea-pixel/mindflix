@@ -724,8 +724,7 @@ function playAudio(item){
   if(item.position>0)audio.currentTime=item.position;
   
   audio.play().catch(()=>{
-    toast('Nu pot reda direct. Deschid intr-o noua fereastra...');
-    window.open(item.link,'_blank');
+    showDriveHelp(item.link);
   });
 
   document.getElementById('pThumb').textContent=item.emoji||'🎵';
@@ -784,12 +783,69 @@ function openPDF(item){
 
 /* ═══ LINK CONVERTERS ═══ */
 function convertDriveLink(url){
-  // Google Drive share link -> direct download stream
+  if(!url)return '';
+  // Google Drive — extrage ID si construieste link de streaming
   const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if(m)return `https://drive.google.com/uc?export=download&id=${m[1]}`;
-  // OneDrive
+  if(m){
+    const id=m[1];
+    // Folosim /uc?export=open pentru streaming audio/video
+    return `https://drive.google.com/uc?export=open&id=${id}`;
+  }
+  // Google Drive alternativ (open?id=)
+  const m2=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(url.includes('drive.google.com')&&m2)return `https://drive.google.com/uc?export=open&id=${m2[1]}`;
+  // OneDrive direct embed
   if(url.includes('1drv.ms')||url.includes('onedrive.live.com'))return url;
   return url;
+}
+
+function showDriveHelp(originalLink){
+  const isDrive=originalLink&&originalLink.includes('drive.google.com');
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  const box=document.createElement('div');
+  box.style.cssText='background:#1A1A1A;border:.5px solid rgba(201,168,76,.3);border-radius:12px;max-width:460px;width:100%;padding:1.75rem;';
+  box.innerHTML=`
+    <div style="font-family:\'Playfair Display\',serif;font-size:1.1rem;font-weight:600;margin-bottom:1rem;color:#F0EDE6;">
+      ${isDrive?'Setare Google Drive necesara':'Nu pot reda direct'}
+    </div>
+    ${isDrive?`
+    <p style="font-size:.84rem;color:rgba(240,237,230,.7);line-height:1.7;margin-bottom:1rem;">
+      Google Drive blocheaza redarea directa. Fa urmatorii pasi:
+    </p>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.25rem;">
+      <div style="background:#242424;border-radius:6px;padding:.7rem 1rem;font-size:.82rem;color:#F0EDE6;display:flex;align-items:flex-start;gap:.6rem;">
+        <span style="color:#C9A84C;font-weight:600;flex-shrink:0;">1.</span>
+        Deschide Google Drive si gaseste fisierul audio
+      </div>
+      <div style="background:#242424;border-radius:6px;padding:.7rem 1rem;font-size:.82rem;color:#F0EDE6;display:flex;align-items:flex-start;gap:.6rem;">
+        <span style="color:#C9A84C;font-weight:600;flex-shrink:0;">2.</span>
+        Click dreapta → <strong style="color:#C9A84C;">Share</strong> → <strong style="color:#C9A84C;">Anyone with the link</strong>
+      </div>
+      <div style="background:#242424;border-radius:6px;padding:.7rem 1rem;font-size:.82rem;color:#F0EDE6;display:flex;align-items:flex-start;gap:.6rem;">
+        <span style="color:#C9A84C;font-weight:600;flex-shrink:0;">3.</span>
+        Copiaza link-ul si lipeste-l in campul "Link" al titlului
+      </div>
+      <div style="background:rgba(76,175,125,.1);border:.5px solid rgba(76,175,125,.3);border-radius:6px;padding:.7rem 1rem;font-size:.82rem;color:#4CAF7D;">
+        ✓ Aplicatia converteste automat link-ul in format de streaming
+      </div>
+    </div>
+    `:`
+    <p style="font-size:.84rem;color:rgba(240,237,230,.7);line-height:1.7;margin-bottom:1rem;">
+      Browserul nu poate reda acest fisier direct. Deschide-l manual:
+    </p>
+    `}
+    <div style="display:flex;gap:.65rem;">
+      <button onclick="window.open('${originalLink}','_blank')" style="flex:1;background:#C9A84C;color:#0A0A0A;border:none;padding:10px;border-radius:6px;font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:.84rem;cursor:pointer;">
+        Deschide in browser
+      </button>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:rgba(255,255,255,.08);color:#F0EDE6;border:.5px solid rgba(255,255,255,.18);padding:10px 16px;border-radius:6px;font-family:\'DM Sans\',sans-serif;font-size:.84rem;cursor:pointer;">
+        Inchide
+      </button>
+    </div>`;
+  modal.appendChild(box);
+  modal.onclick=(e)=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
 }
 
 function convertYouTube(url){
